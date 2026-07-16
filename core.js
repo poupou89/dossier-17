@@ -1,0 +1,17 @@
+"use strict";
+window.D17={};
+D17.initial={name:"",stage:0,direction:"",steps:"",time:"",suspect:"",instruction:"",coords:"",monument:"",year:"",final:""};
+D17.state=Object.assign({},D17.initial,JSON.parse(localStorage.getItem("d17v6")||"{}"));
+D17.stages=["lampe","cadran","logique","decalage","colonnes","carte","meta"];
+D17.views={};
+D17.save=()=>localStorage.setItem("d17v6",JSON.stringify(D17.state));
+D17.go=s=>location.hash="#/"+s;
+D17.norm=s=>(s||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
+D17.notebook=()=>{const s=D17.state,items=[["DIRECTION",s.direction],["PAS",s.steps],["HEURE",s.time],["IDENTITÉ",s.suspect],["INSTRUCTION",s.instruction],["COORDONNÉES",s.coords],["ANNÉE",s.year]];return `<div class="progress"><span style="width:${Math.min(100,(s.stage/7)*100)}%"></span></div><div class="notebook">${items.map(([k,v])=>`<div class="note ${v?"open":""}"><b>${k}</b>${v||"VERROUILLÉ"}</div>`).join("")}</div>`};
+D17.side=(story,hints=[])=>`<aside class="panel side"><p class="ey">CARNET D’ENQUÊTE</p><div class="story">${story}</div>${D17.notebook()}${hints.length?`<button class="secondary" id="hint" style="margin-top:14px">INDICE PROGRESSIF</button><div id="hintText" class="hintText"></div>`:""}</aside>`;
+D17.wireHints=hints=>{const b=document.querySelector("#hint"),t=document.querySelector("#hintText");if(!b)return;let i=0;b.onclick=()=>{t.textContent=hints[Math.min(i,hints.length-1)];i++}};
+D17.answerForm=(accepted,next,token)=>{const form=document.querySelector("#form"),feed=document.querySelector("#feed");if(!form)return;form.onsubmit=e=>{e.preventDefault();const v=D17.norm(document.querySelector("#answer").value),ok=accepted.some(a=>D17.norm(a)===v);feed.className="status "+(ok?"good":"bad");feed.textContent=ok?"Validation cryptographique réussie.":"La réponse ne correspond pas aux preuves.";if(ok){if(token)token();D17.save();setTimeout(()=>D17.go(next),650)}}};
+D17.views.accueil=()=>{const s=D17.state;D17.app.innerHTML=`<section class="panel"><p class="ey">CHAPITRE EXPERT · PROTOCOLE JANUS</p><h1>Une preuve seule ne vaut rien.<br><span>Tout doit être croisé.</span></h1><p class="lead">Sept verrous. Chaque réponse devient la clé mathématique ou logique du verrou suivant. Prévoyez papier, captures d’écran et réflexion collective.</p><div class="box"><b>Règle fondamentale</b><p>Les interactions ne donnent jamais une solution gratuitement. Elles révèlent seulement des données à interpréter.</p></div><label>TON PSEUDONYME</label><input id="name" maxlength="24" value="${s.name||""}"><button class="primary" id="start">OUVRIR LE DOSSIER</button></section>`;document.querySelector("#start").onclick=()=>{s.name=document.querySelector("#name").value.trim()||"Veilleur";D17.save();D17.go(s.stage?D17.stages[Math.min(s.stage,6)]:"lampe")}};
+D17.render=()=>{const route=location.hash.replace(/^#\//,"")||"accueil";(D17.views[route]||D17.views.accueil)()};
+D17.boot=()=>{D17.app=document.querySelector("#app");document.querySelector("#reset").onclick=()=>{if(confirm("Effacer toute la progression du chapitre ?")){localStorage.removeItem("d17v6");Object.assign(D17.state,D17.initial);D17.go("accueil");D17.render()}};addEventListener("hashchange",D17.render);D17.render()};
+addEventListener("DOMContentLoaded",D17.boot);
